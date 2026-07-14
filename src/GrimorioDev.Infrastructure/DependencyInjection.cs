@@ -1,3 +1,5 @@
+using GrimorioDev.Domain.Interfaces;
+using GrimorioDev.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -18,6 +20,8 @@ public static class DependencyInjection
             builder.ClearProviders();
             builder.AddSerilog(dispose: true);
         });
+
+        services.AddSingleton<IWorkspaceRepository, JsonWorkspaceRepository>();
 
         return services;
     }

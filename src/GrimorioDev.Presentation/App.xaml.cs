@@ -21,8 +21,8 @@ public partial class App : System.Windows.Application
 
         ServiceProvider = services.BuildServiceProvider();
 
-        var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+        var startScreen = ServiceProvider.GetRequiredService<StartScreenWindow>();
+        startScreen.Show();
     }
 }
 
@@ -32,6 +32,8 @@ public static class DependencyInjection
     {
         services.AddTransient<MainViewModel>();
         services.AddTransient<MainWindow>();
+        services.AddTransient<WorkspaceViewModel>();
+        services.AddTransient<StartScreenWindow>();
         return services;
     }
 }

@@ -1,0 +1,168 @@
+<Window x:Class="GrimorioDev.Presentation.Views.StartScreenWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:GrimorioDev.Presentation.ViewModels"
+        Title="GrimórioDev" 
+        Height="600" Width="900"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanMinimize">
+    <Grid Background="{StaticResource BackgroundPrimary}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Padding="32,24" Background="{StaticResource BackgroundSecondary}">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="GrimórioDev"
+                           FontSize="32" FontWeight="Bold"
+                           Foreground="{StaticResource ForegroundAccent}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="Canvas Infinito para Desenvolvimento"
+                           FontSize="14" Foreground="{StaticResource ForegroundSecondary}"
+                           HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Content -->
+        <Grid Grid.Row="1" Margin="32,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Recent Workspaces -->
+            <Border Grid.Column="0" CornerRadius="8"
+                    Background="{StaticResource BackgroundSecondary}" Padding="20"
+                    Margin="0,0,16,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="Workspaces Recentes"
+                               FontSize="16" FontWeight="SemiBold"
+                               Foreground="{StaticResource ForegroundPrimary}"
+                               Margin="0,0,0,12"/>
+
+                    <!-- Loading -->
+                    <TextBlock Grid.Row="1"
+                               Text="Carregando..."
+                               Foreground="{StaticResource ForegroundSecondary}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                    <!-- Empty state -->
+                    <StackPanel Grid.Row="1"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding RecentWorkspaces.Count, Converter={StaticResource ZeroToVisibilityConverter}}">
+                        <TextBlock Text="Nenhum workspace encontrado"
+                                   Foreground="{StaticResource ForegroundSecondary}"
+                                   HorizontalAlignment="Center" FontSize="14"/>
+                        <TextBlock Text="Crie um novo workspace para começar"
+                                   Foreground="{StaticResource ForegroundSecondary}"
+                                   HorizontalAlignment="Center" FontSize="12" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <!-- Workspace list -->
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding RecentWorkspaces}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,2" Padding="12,10" CornerRadius="6"
+                                        Background="{StaticResource BackgroundTertiary}"
+                                        Cursor="Hand">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource ForegroundPrimary}"/>
+                                            <TextBlock Foreground="{StaticResource ForegroundSecondary}"
+                                                       FontSize="12" Margin="0,2,0,0">
+                                                <Run Text="{Binding CardCount, Mode=OneWay}"/>
+                                                <Run Text=" cards"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   Foreground="{StaticResource ForegroundSecondary}"
+                                                   FontSize="11" VerticalAlignment="Center">
+                                            <Run Text="{Binding LastOpenedAt, Mode=OneWay, StringFormat=\\{0:dd/MM/yyyy HH:mm\\}}"/>
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <!-- Actions -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Top" Width="220">
+                <!-- Create Workspace Panel -->
+                <Border CornerRadius="8" Background="{StaticResource BackgroundSecondary}" Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="Novo Workspace" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource ForegroundPrimary}" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Nome" Foreground="{StaticResource ForegroundSecondary}"
+                                   FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewWorkspaceName, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,0,8" Padding="8,6"/>
+
+                        <TextBlock Text="Descrição" Foreground="{StaticResource ForegroundSecondary}"
+                                   FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewWorkspaceDescription, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,0,8" Padding="8,6"/>
+
+                        <TextBlock Text="Localização (opcional)" Foreground="{StaticResource ForegroundSecondary}"
+                                   FontSize="12" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding NewWorkspaceLocation, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,0,0,12" Padding="8,6"/>
+
+                        <Button Content="Criar Workspace"
+                                Command="{Binding CreateWorkspaceCommand}"
+                                Padding="12,8" FontWeight="SemiBold"
+                                Background="{StaticResource ForegroundAccent}"
+                                Foreground="White" BorderThickness="0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Quick Actions -->
+                <Border CornerRadius="8" Background="{StaticResource BackgroundSecondary}" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Ações Rápidas" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{StaticResource ForegroundPrimary}" Margin="0,0,0,12"/>
+                        <Button Content="📂 Abrir Workspace..."
+                                Padding="12,8" Margin="0,0,0,8"
+                                HorizontalContentAlignment="Left"
+                                Background="{StaticResource BackgroundTertiary}"/>
+                        <Button Content="📁 Abrir Pasta..."
+                                Padding="12,8"
+                                HorizontalContentAlignment="Left"
+                                Background="{StaticResource BackgroundTertiary}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" Padding="16,8" Background="{StaticResource BackgroundSecondary}">
+            <TextBlock Text="v0.1.0 — GrimórioDev"
+                       Foreground="{StaticResource ForegroundSecondary}"
+                       FontSize="11" HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

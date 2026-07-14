@@ -7,10 +7,14 @@
 - [x] Tema escuro
 - [x] Documentação base
 
-## Fase 2 ⏳ — Workspace (próximo)
-- Abertura / criação de workspace
-- Persistência e Auto Save
-- Estrutura de pastas e recuperação
+## Fase 2 ✅ — Sistema de Workspace
+- [x] Entidades domínio (Workspace, WorkspaceSettings, CardIndexEntry)
+- [x] Interfaces (IWorkspaceRepo, ICardRepo, ICardCache, etc.)
+- [x] Persistência JSON com recent workspaces
+- [x] WorkspaceService (CRUD)
+- [x] Auto Save + Dirty Tracking
+- [x] UI: StartScreenWindow com lista de workspaces
+- [x] DI integrada (Application + Infrastructure)
 
 ## Fase 3 — Canvas Infinito
 ## Fase 4 — Sistema de Cards

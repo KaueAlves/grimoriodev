@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0] — 2026-07-14
+### Adicionado
+- **Fase 2: Sistema de Workspace**
+- Entidade `Workspace` (sealed, factory method, restore para deserialização)
+- Value Object `WorkspaceSettings` (19 configurações, init-only, immutable)
+- Struct `CardIndexEntry` (32 bytes, layout de mmap, FNV-1a type hash)
+- Interfaces: `IWorkspaceRepository`, `ICardRepository`, `ICardCache`, `IWalService`, `IBloomFilter`, `IMemoryBudgetManager`, `IDeduplicationService`
+- `JsonWorkspaceRepository` — persistência JSON com recent workspaces
+- `WorkspaceService` — Create, Open, Save, List, Delete workspaces
+- `DirtyTrackerService` — rastreamento de alterações com prioridade
+- `AutoSaveService` — timer com batch e throttling
+- `WorkspaceViewModel` — MVVM para UI de workspace
+- `StartScreenWindow` — tela inicial com lista de workspaces recentes
+- Converters WPF (BoolToVisibility, ZeroToVisibility)
+- Source Generator `WorkspaceJsonContext` (System.Text.Json AOT)
+- .gitignore
+
 ## [0.1.0] — 2026-07-14
 ### Adicionado
 - Estrutura inicial da solução (Fase 1)
