@@ -2,14 +2,79 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{Binding Title}"
-        Height="800"
-        Width="1200"
+        Height="800" Width="1200"
         WindowStartupLocation="CenterScreen">
-    <Grid>
-        <TextBlock Text="GrimórioDev — Canvas"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   FontSize="24"
-                   Foreground="{StaticResource ForegroundPrimary}" />
+    <Grid Background="{StaticResource BackgroundPrimary}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Menu -->
+        <Menu Grid.Row="0" Background="{StaticResource BackgroundSecondary}"
+              Foreground="{StaticResource ForegroundPrimary}" Padding="4,2">
+            <MenuItem Header="_Arquivo">
+                <MenuItem Header="🔄 _Fechar Workspace" IsEnabled="{Binding HasWorkspace}"/>
+                <Separator/>
+                <MenuItem Header="❌ _Sair" Click="OnExitClick"/>
+            </MenuItem>
+            <MenuItem Header="_Ferramentas" IsEnabled="{Binding HasWorkspace}">
+                <MenuItem Header="📊 Compactar WAL"/>
+                <MenuItem Header="🧹 Vacuum Data"/>
+            </MenuItem>
+            <MenuItem Header="A_juda">
+                <MenuItem Header="📖 Sobre"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Canvas placeholder -->
+        <Border Grid.Row="1" Margin="0">
+            <Grid>
+                <TextBlock Text="{Binding WorkspaceName}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="28" FontWeight="Bold"
+                           Foreground="{StaticResource ForegroundAccent}"/>
+
+                <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                            Margin="0,0,0,40" Visibility="{Binding HasWorkspace, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <TextBlock Text="{Binding WorkspaceDescription}"
+                               Foreground="{StaticResource ForegroundSecondary}"
+                               FontSize="14" HorizontalAlignment="Center"/>
+                    <TextBlock Margin="0,8,0,0" FontSize="12"
+                               Foreground="{StaticResource ForegroundSecondary}"
+                               HorizontalAlignment="Center">
+                        <Run Text="{Binding CardCount}"/><Run Text=" cards · "/>
+                        <Run Text="{Binding SizeInfo}"/>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Padding="12,4" Background="{StaticResource BackgroundSecondary}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="{Binding StatusText}"
+                           Foreground="{StaticResource ForegroundSecondary}" FontSize="12"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal"
+                            Visibility="{Binding HasWorkspace, Converter={StaticResource BoolToVisibilityConverter}}">
+                    <TextBlock Foreground="{StaticResource ForegroundSecondary}" FontSize="12">
+                        <Run Text="{Binding WorkspaceName}"/>
+                        <Run Text=" · "/>
+                        <Run Text="{Binding CardCount}"/>
+                        <Run Text=" cards · "/>
+                        <Run Text="{Binding SizeInfo}"/>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

@@ -2,20 +2,16 @@
 
 ## [0.2.0] — 2026-07-14
 ### Adicionado
-- **Fase 2: Sistema de Workspace**
-- Entidade `Workspace` (sealed, factory method, restore para deserialização)
-- Value Object `WorkspaceSettings` (19 configurações, init-only, immutable)
-- Struct `CardIndexEntry` (32 bytes, layout de mmap, FNV-1a type hash)
-- Interfaces: `IWorkspaceRepository`, `ICardRepository`, `ICardCache`, `IWalService`, `IBloomFilter`, `IMemoryBudgetManager`, `IDeduplicationService`
-- `JsonWorkspaceRepository` — persistência JSON com recent workspaces
-- `WorkspaceService` — Create, Open, Save, List, Delete workspaces
-- `DirtyTrackerService` — rastreamento de alterações com prioridade
-- `AutoSaveService` — timer com batch e throttling
-- `WorkspaceViewModel` — MVVM para UI de workspace
-- `StartScreenWindow` — tela inicial com lista de workspaces recentes
-- Converters WPF (BoolToVisibility, ZeroToVisibility)
-- Source Generator `WorkspaceJsonContext` (System.Text.Json AOT)
-- .gitignore
+- **Fase 2: Sistema de Workspace** (parte 1 — CRUD + UI + LSM engine)
+- Entidade `Workspace`, `WorkspaceSettings`, `CardIndexEntry`
+- Interfaces: IWorkspaceRepo, ICardRepo, ICardCache, IWalService, IBloomFilter, IMemoryBudgetManager, IDedupService
+- **LSM Storage Engine**: DataFileRepository (data.lz4), MemoryMappedIndexRepository (idx.bin), MemoryMappedIndexBloomFilter, WalService (group commit), ContentAddressableStore (dedup SHA-256), Lz4CompressionService, CardCacheLru2Q, PooledBuffer, MemoryBudgetManager, Prefetcher
+- **Use Cases**: LoadCard, RecoverWorkspace, CompactWal, VacuumData, WorkspaceService, DirtyTrackerService, AutoSaveService
+- **Integração**: WorkspaceSessionService (gerencia sessão LSM), navegação StartScreen → MainWindow, WAL replay no open workspace
+- **UI**: StartScreenWindow (lista workspaces + criar), MainWindow (info + status bar + menu)
+- Converters WPF, Source Generator WorkspaceJsonContext, .gitignore
+- NuGet: K4os.Compression.LZ4 1.3.8
+- **Compilação**: 0 warnings, 0 errors
 
 ## [0.1.0] — 2026-07-14
 ### Adicionado

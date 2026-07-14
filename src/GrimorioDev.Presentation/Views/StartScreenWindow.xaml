@@ -73,6 +73,7 @@
                     <!-- Workspace list -->
                     <ListBox Grid.Row="1"
                              ItemsSource="{Binding RecentWorkspaces}"
+                             SelectedItem="{Binding SelectedWorkspace, Mode=TwoWay}"
                              Background="Transparent"
                              BorderThickness="0"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -145,11 +146,14 @@
                     <StackPanel>
                         <TextBlock Text="Ações Rápidas" FontSize="16" FontWeight="SemiBold"
                                    Foreground="{StaticResource ForegroundPrimary}" Margin="0,0,0,12"/>
-                        <Button Content="📂 Abrir Workspace..."
+                        <Button Content="Abrir Selecionado"
+                                Command="{Binding OpenWorkspaceCommand}"
+                                CommandParameter="{Binding SelectedWorkspace}"
                                 Padding="12,8" Margin="0,0,0,8"
                                 HorizontalContentAlignment="Left"
                                 Background="{StaticResource BackgroundTertiary}"/>
-                        <Button Content="📁 Abrir Pasta..."
+                        <Button Content="Procurar Pasta..."
+                                Command="{Binding BrowseWorkspaceCommand}"
                                 Padding="12,8"
                                 HorizontalContentAlignment="Left"
                                 Background="{StaticResource BackgroundTertiary}"/>

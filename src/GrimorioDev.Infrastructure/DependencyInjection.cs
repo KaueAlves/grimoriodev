@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddSingleton<IWorkspaceRepository, JsonWorkspaceRepository>();
         services.AddSingleton<Lz4CompressionService>();
         services.AddSingleton<MemoryBudgetManager>();
+        services.AddSingleton<WorkspaceSessionService>();
 
         return services;
     }
