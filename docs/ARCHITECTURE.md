@@ -32,9 +32,9 @@
 - Serilog com sinks: arquivo + console
 
 ## Projetos
-| Projeto | Tipo | Dependências |
-|---------|------|-------------|
-| Domain | Class Library | — |
-| Application | Class Library | Domain |
-| Infrastructure | Class Library | Application |
-| Presentation | WPF | Application, Infrastructure |
+| Projeto | Tipo | Dependências | Pacotes Principais |
+|---------|------|-------------|-------------------|
+| Domain | Class Library | — | — |
+| Application | Class Library | Domain | Logging.Abstractions |
+| Infrastructure | Class Library | Application | Serilog, DI.Abstractions |
+| Presentation | WPF | Application, Infrastructure | CommunityToolkit.Mvvm, DI |

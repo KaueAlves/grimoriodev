@@ -62,26 +62,41 @@ Criar solução .NET, configurar arquitetura Clean Architecture, DI, Logging, MV
 - [x] Domain ✅ (0 warnings, 0 errors)
 - [x] Application ✅ (0 warnings, 0 errors)
 - [x] Infrastructure ✅ (0 warnings, 0 errors)
-- [x] Presentation ⚠️ (não compila no Linux — WPF é Windows-only)
+- [x] Presentation ✅ (0 warnings, 0 errors — corrigido conflito de namespace `Application`)
+
+---
+
+## Correções realizadas nesta revisão 🔧
+
+### NuGet redundantes removidos
+- [x] Removido `CommunityToolkit.Mvvm` do `Application.csproj` (não era usado nessa camada)
+- [x] Removido `Serilog`, `Serilog.Extensions.Logging`, `Serilog.Sinks.Console`, `Serilog.Sinks.File`, `Microsoft.Extensions.Logging` do `Presentation.csproj` (já recebidos via Infrastructure)
+- [x] `Presentation.csproj` mantém apenas: `CommunityToolkit.Mvvm` e `Microsoft.Extensions.DependencyInjection`
+
+### Correção de compilação
+- [x] Corrigido conflito de namespace `GrimorioDev.Application` vs tipo `System.Windows.Application` em `App.xaml.cs` (usa fully-qualified name)
+
+### Contagem de arquivos corrigida
+- Step anterior listava 19 arquivos — realidade são **21 arquivos** (csproj de cada projeto + Styles.xaml não estavam na lista original)
 
 ---
 
 ## O que faltou / Pendências 🔴
 
 ### Críticas
-- [ ] **Presentation não compila no Linux** — WPF exige Windows com .NET SDK + workload WPF. O projeto está correto, mas só pode ser verificado no Windows.
 - [ ] **Nenhum teste foi criado** — A Fase 1 não tem testes unitários. Idealmente deveria haver ao menos um teste para `EntityBase`.
 
 ### Melhorias / Baixa Prioridade
-- [ ] **Nenhum ADR foi criado** — Decisões arquiteturais (ex: escolha do CommunityToolkit.Mvvm, Serilog, estrutura de pastas) deveriam ter ADRs.
-- [ ] **Faltam `.gitignore`** e `Directory.Build.props` para versionamento e configurações compartilhadas.
-- [ ] **.NET 9 não disponível no ambiente** — Usamos .NET 8. O target pode ser atualizado quando o SDK 9 estiver disponível.
-- [ ] **Nenhum `appsettings.json`** para configurações do Serilog e DI — atualmente tudo está hardcoded.
-- [ ] **Não há `GlobalUsings.cs`** — usings estão espalhados nos arquivos.
+- [ ] **Nenhum ADR foi criado** — Decisões arquiteturais (escolha do CommunityToolkit.Mvvm, Serilog, estrutura de pastas) deveriam ter ADRs.
+- [ ] **Falta `.gitignore`** — Diretórios `bin/` e `obj/` estão sendo versionados.
+- [ ] **Falta `Directory.Build.props`** — Configurações compartilhadas entre projetos (TargetFramework, Nullable, ImplicitUsings).
+- [ ] **Falta `GlobalUsings.cs`** — Usings comuns estão repetidos nos arquivos.
+- [ ] **Falta `appsettings.json`** — Configurações do Serilog e DI estão hardcoded no `DependencyInjection.cs`.
+- [ ] **`AddPresentation()` definida inline no `App.xaml.cs`** — Diferente de `AddApplication()` e `AddInfrastructure()` que possuem arquivos próprios. Considerar extrair para `Presentation/DependencyInjection.cs`.
 
 ---
 
-## Arquivos Criados (19)
+## Arquivos Criados (21)
 ```
 GrimorioDev.sln
 docs/SPEC.md
