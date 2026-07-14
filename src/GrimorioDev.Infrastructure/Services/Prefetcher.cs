@@ -43,7 +43,7 @@ public sealed class Prefetcher : IDisposable
                     var offset = _dataRepository.GetSegmentStartOffset(seg);
                     _logger.LogTrace("Prefetching segment {Segment} at offset {Offset}", seg, offset);
 
-                    await Task.Delay(1, token);
+                    await Task.Delay(1, token).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException) { }

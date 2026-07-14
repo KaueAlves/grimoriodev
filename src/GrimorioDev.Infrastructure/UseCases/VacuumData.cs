@@ -53,9 +53,9 @@ public sealed class VacuumData
 
                 try
                 {
-                    var data = await _dataFile.ReadEntryAsync(seg, off);
+                    var data = await _dataFile.ReadEntryAsync(seg, off).ConfigureAwait(false);
                     var writeResult = await tempDataFile.AppendAsync(
-                        cardId, data, compress: true);
+                        cardId, data, compress: true).ConfigureAwait(false);
                     entries.Add((cardId, writeResult.SegmentIndex, writeResult.Offset));
                 }
                 catch (Exception ex)

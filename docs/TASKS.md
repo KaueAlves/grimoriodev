@@ -23,13 +23,14 @@
 
 ### Persistência
 - [x] JsonWorkspaceRepository (JSON + recent workspaces)
-- [x] DataFileRepository (data.lz4 append-only + segments)
-- [x] MemoryMappedIndexRepository (idx.bin two-level sorted, binary search)
-- [x] MemoryMappedIndexBloomFilter (global, FNV-1a + Murmur3)
-- [x] ContentAddressableStore (blobs/ SHA-256 dedup)
-- [x] WalService (group commit + CRC32 + compaction)
+- [x] DataFileRepository (data.lz4 append-only + segments, async SemaphoreSlim)
+- [x] MemoryMappedIndexRepository (idx.bin two-level sorted, Guid.CompareTo binary search)
+- [x] MemoryMappedIndexBloomFilter (global, FNV-1a + Murmur3, SIMD Vector<byte>)
+- [x] ContentAddressableStore (blobs/ SHA-256 dedup, SemaphoreSlim)
+- [x] WalService (group commit + CRC32 + compactação + incremental checkpoint)
 - [x] Lz4CompressionService (adaptive L0/L9)
 - [x] WorkspaceJsonContext (source generator)
+- [x] TokenBucket (rate limiter 50MB/s)
 
 ### Cache
 - [x] CardCacheLru2Q (hot/warm queues, adaptive sizing, write buffer)
@@ -44,21 +45,45 @@
 - [x] VacuumData (rewrite + rebuild index + bloom)
 - [x] WorkspaceService (Create, Open, Save, List, Delete)
 - [x] DirtyTrackerService (rastreamento de alterações)
-- [x] AutoSaveService (timer + batch + throttling)
+- [x] AutoSaveService (Channel<SaveRequest>, coalescing, batching, prioridade)
+
+### I/O e Otimizações
+- [x] ConfigureAwait(false) infra-wide (41 awaits em 8 arquivos)
+- [x] SemaphoreSlim(max 4) em DataFileRepository + ContentAddressableStore
+- [x] true async I/O (WriteAsync/ReadExactlyAsync) em DataFileRepository
+- [x] SIMD binary search: TryFindSimd (AVX2 + SSE2 + scalar fallback)
+- [x] PrefaultPages() no MemoryMappedIndexRepository.Open()
+- [x] Incremental checkpoint no WalService (500 entries / 5min)
+- [x] Channel<SaveRequest> no AutoSaveService (System.Threading.Channels)
+- [x] ArrayPool<byte> em todos os buffers
+- [x] TokenBucket 50MB/s para throttling de I/O
 
 ### Presentation
-- [x] WorkspaceViewModel (MVVM)
+- [x] WorkspaceViewModel (MVVM, WAL replay, session lifecycle)
 - [x] StartScreenWindow (tela inicial com workspaces recentes)
+- [x] MainViewModel (status bar, card count, size, save status)
+- [x] MainWindow (menu + status bar + workspace info)
 - [x] Converters WPF (BoolToVisibility, ZeroToVisibility)
+- [x] DI completa (AddApplication + AddInfrastructure + AddPresentation)
+- [x] Navegação StartScreen → MainWindow com WAL recovery
 
-### Integração
-- [x] DI registrada (Application + Infrastructure)
-- [x] Compilação: 0 warnings, 0 errors
+### Testes
+- [x] Directory.Build.props (TreatWarningsAsErrors, AnalysisLevel)
+- [x] 86 testes unitários (xUnit + Shouldly + NSubstitute)
+- [x] WorkspaceServiceTests (10) — CRUD + edge cases
+- [x] DataFileRepositoryTests (4) — append/read/segment/dedup pointer
+- [x] WalServiceTests (9) — replay/group commit/compactação/CRC/corrupção
+- [x] ContentAddressableStoreTests (11) — hash/store/load/dedup/size
+- [x] MemoryMappedIndexBloomFilterTests (9) — add/check/FP/persist/rebuild
+- [x] CardCacheLru2QTests (10) — set/get/eviction/write buffer/hit rate
+- [x] MemoryMappedIndexRepositoryTests (10) — upsert/find/remove/persist/rebuild
+- [x] Lz4CompressionServiceTests (5) — roundtrip/empty/large/span
+- [x] PooledBufferTests (6) — rent/advance/reset/dispose
+- [x] MemoryBudgetManagerTests (8) — allocation/pressure/critical
 
-## Pendências 🔴
-- [ ] Criar `Directory.Build.props` (configurações compartilhadas)
-- [ ] Criar `GlobalUsings.cs`
-- [ ] Criar testes unitários
-- [ ] Integrar workspace services no fluxo de UI (abrir → mmap → bloom → cache)
-- [ ] Format ws.meta binário (atualmente usa JSON)
-- [ ] Prefault mmap pages (PrefetchVirtualMemory)
+### Documentação
+- [x] ADR-001: data file vs per-card files
+- [x] ADR-002: dedup SHA-256 vs xxHash
+- [x] ADR-003: group commit vs per-entry WAL
+- [x] ADR-004: adaptive LZ4 vs compressão fixa
+- [x] Localização padrão: %USERPROFILE%/GrimorioDev

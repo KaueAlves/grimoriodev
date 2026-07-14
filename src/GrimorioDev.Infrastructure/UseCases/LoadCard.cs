@@ -58,7 +58,7 @@ public sealed class LoadCard
 
         try
         {
-            var data = await _dataFile.ReadEntryAsync(segmentIndex, offsetInSegment);
+            var data = await _dataFile.ReadEntryAsync(segmentIndex, offsetInSegment).ConfigureAwait(false);
             var bytes = data.ToArray();
             _cache.Set(cardId, bytes);
             return bytes;
@@ -66,7 +66,7 @@ public sealed class LoadCard
         catch (DedupReferenceException dre)
         {
             _logger.LogDebug("Card {CardId} is dedup reference", cardId);
-            var blob = await _dedupStore.LoadBlobAsync(dre.ContentHash, cancellationToken);
+            var blob = await _dedupStore.LoadBlobAsync(dre.ContentHash, cancellationToken).ConfigureAwait(false);
             var bytes = blob.ToArray();
             _cache.Set(cardId, bytes);
             return bytes;

@@ -32,7 +32,7 @@ public sealed class RecoverWorkspace
 
     public async Task<int> ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        var entries = await _wal.ReplayAsync(cancellationToken);
+        var entries = await _wal.ReplayAsync(cancellationToken).ConfigureAwait(false);
         if (entries.Count == 0)
         {
             _logger.LogInformation("No WAL entries to replay");
@@ -50,7 +50,7 @@ public sealed class RecoverWorkspace
                     case WalOperation.Create:
                     case WalOperation.Update:
                         var result = await _dataFile.AppendAsync(
-                            entry.CardId, entry.Payload, compress: false);
+                            entry.CardId, entry.Payload, compress: false).ConfigureAwait(false);
                         _index.Upsert(entry.CardId, result.SegmentIndex, result.Offset);
                         _bloom.Add(entry.CardId);
                         appliedCount++;
@@ -69,7 +69,7 @@ public sealed class RecoverWorkspace
         }
 
         _cache.Clear();
-        await _wal.TruncateAsync(cancellationToken);
+        await _wal.TruncateAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation("WAL recovery complete: {Applied}/{Total} entries applied", appliedCount, entries.Count);
         return appliedCount;

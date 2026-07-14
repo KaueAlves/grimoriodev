@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using GrimorioDev.Domain.Entities;
 using GrimorioDev.Infrastructure.IO;
 using GrimorioDev.Infrastructure.Services;
@@ -14,7 +16,7 @@ public sealed class DataFileRepository : IDisposable
     private readonly string _segmentsPath;
     private readonly Lz4CompressionService _compression;
     private readonly ILogger<DataFileRepository> _logger;
-    private readonly object _writeLock = new();
+    private readonly SemaphoreSlim _writeLock = new(1, 1);
     private FileStream? _dataStream;
     private long _currentSegmentStart;
     private int _currentSegmentIndex;
@@ -50,7 +52,7 @@ public sealed class DataFileRepository : IDisposable
             _dataFilePath,
             FileMode.OpenOrCreate,
             FileAccess.ReadWrite,
-            FileShare.Read,
+            FileShare.ReadWrite,
             bufferSize: 65536,
             useAsync: true);
 
@@ -62,8 +64,8 @@ public sealed class DataFileRepository : IDisposable
         }
     }
 
-    public Task<(int SegmentIndex, long Offset)> AppendAsync(
-        Guid cardId, ReadOnlyMemory<byte> payload, bool compress)
+    public async Task<(int SegmentIndex, long Offset)> AppendAsync(
+        Guid cardId, ReadOnlyMemory<byte> payload, bool compress, CancellationToken cancellationToken = default)
     {
         byte[] compressedData;
         int decompressedSize = payload.Length;
@@ -89,9 +91,8 @@ public sealed class DataFileRepository : IDisposable
             compressedSize = 0;
         }
 
-        var entrySize = EntryHeaderSize + (compressedSize > 0 ? compressedSize : decompressedSize);
-
-        lock (_writeLock)
+        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
             if (_dataStream is null)
                 throw new InvalidOperationException("Data file not open");
@@ -106,26 +107,31 @@ public sealed class DataFileRepository : IDisposable
             var offset = _dataStream.Position;
             var segmentOffset = offset - _currentSegmentStart;
 
-            Span<byte> header = stackalloc byte[EntryHeaderSize];
-            BitConverter.GetBytes(decompressedSize).CopyTo(header);
-            BitConverter.GetBytes(compressedSize).CopyTo(header[4..]);
-            _dataStream.Write(header);
+            var headerBytes = new byte[EntryHeaderSize];
+            BitConverter.GetBytes(decompressedSize).CopyTo(headerBytes, 0);
+            BitConverter.GetBytes(compressedSize).CopyTo(headerBytes, 4);
+            await _dataStream.WriteAsync(headerBytes, cancellationToken).ConfigureAwait(false);
 
             if (compressedSize > 0)
-                _dataStream.Write(compressedData);
+                await _dataStream.WriteAsync(compressedData, cancellationToken).ConfigureAwait(false);
             else
-                _dataStream.Write(payload.Span);
+                await _dataStream.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
 
-            return Task.FromResult((_currentSegmentIndex, segmentOffset));
+            return (_currentSegmentIndex, segmentOffset);
+        }
+        finally
+        {
+            _writeLock.Release();
         }
     }
 
-    public Task<int> AppendDedupPointerAsync(byte[] contentHash)
+    public async Task<int> AppendDedupPointerAsync(byte[] contentHash, CancellationToken cancellationToken = default)
     {
         var dedupSize = -1;
         var entrySize = EntryHeaderSize + DedupPointerSize;
 
-        lock (_writeLock)
+        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
             if (_dataStream is null)
                 throw new InvalidOperationException("Data file not open");
@@ -136,70 +142,103 @@ public sealed class DataFileRepository : IDisposable
                 _currentSegmentStart = _dataStream.Position;
             }
 
-            Span<byte> header = stackalloc byte[EntryHeaderSize];
+            var headerBytes = new byte[EntryHeaderSize];
             var decompressed = 0;
-            BitConverter.GetBytes(decompressed).CopyTo(header);
-            BitConverter.GetBytes(dedupSize).CopyTo(header[4..]);
-            _dataStream.Write(header);
-            _dataStream.Write(contentHash.AsSpan(0, 16));
+            BitConverter.GetBytes(decompressed).CopyTo(headerBytes, 0);
+            BitConverter.GetBytes(dedupSize).CopyTo(headerBytes, 4);
+            await _dataStream.WriteAsync(headerBytes, cancellationToken).ConfigureAwait(false);
+            await _dataStream.WriteAsync(contentHash.AsMemory(0, 16), cancellationToken).ConfigureAwait(false);
 
-            return Task.FromResult((int)(_dataStream.Position - _currentSegmentStart - entrySize));
+            return (int)(_dataStream.Position - _currentSegmentStart - entrySize);
+        }
+        finally
+        {
+            _writeLock.Release();
         }
     }
 
-    public Task<ReadOnlyMemory<byte>> ReadEntryAsync(
-        int segmentIndex, long offsetInSegment)
+    public async Task<ReadOnlyMemory<byte>> ReadEntryAsync(
+        int segmentIndex, long offsetInSegment, CancellationToken cancellationToken = default)
     {
         var segmentStart = (long)segmentIndex * _segmentSizeBytes;
         var absoluteOffset = segmentStart + offsetInSegment;
 
-        using var mmf = MemoryMappedFile.CreateFromFile(_dataFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
-        using var accessor = mmf.CreateViewAccessor(absoluteOffset, _segmentSizeBytes, MemoryMappedFileAccess.Read);
-
-        var headerBuffer = new byte[EntryHeaderSize];
-        accessor.ReadArray(0, headerBuffer, 0, EntryHeaderSize);
-
-        var decompressedSize = MemoryMarshal.Read<int>(headerBuffer.AsSpan(0, 4));
-        var compressedSize = MemoryMarshal.Read<int>(headerBuffer.AsSpan(4, 4));
-
-        if (compressedSize == DedupFlag)
+        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            var hashBuffer = new byte[16];
-            accessor.ReadArray(EntryHeaderSize, hashBuffer, 0, 16);
-            throw new DedupReferenceException(hashBuffer);
+            if (_dataStream is null)
+                throw new InvalidOperationException("Data file not open");
+
+            var savedPosition = _dataStream.Position;
+            try
+            {
+                _dataStream.Seek(absoluteOffset, SeekOrigin.Begin);
+
+                var headerBytes = new byte[EntryHeaderSize];
+                await _dataStream.ReadExactlyAsync(headerBytes, cancellationToken).ConfigureAwait(false);
+
+                var decompressedSize = MemoryMarshal.Read<int>(headerBytes.AsSpan(0, 4));
+                var compressedSize = MemoryMarshal.Read<int>(headerBytes.AsSpan(4, 4));
+
+                if (compressedSize == DedupFlag)
+                {
+                    var hashBuffer = new byte[16];
+                    await _dataStream.ReadExactlyAsync(hashBuffer, cancellationToken).ConfigureAwait(false);
+                    throw new DedupReferenceException(hashBuffer);
+                }
+
+                var payloadSize = compressedSize > 0 ? compressedSize : decompressedSize;
+                var payloadBuffer = new byte[payloadSize];
+                await _dataStream.ReadExactlyAsync(payloadBuffer, cancellationToken).ConfigureAwait(false);
+
+                if (compressedSize > 0)
+                {
+                    var decompressed = new byte[decompressedSize];
+                    _compression.Decompress(payloadBuffer, decompressed);
+                    return decompressed;
+                }
+
+                return payloadBuffer;
+            }
+            finally
+            {
+                _dataStream.Position = savedPosition;
+            }
         }
-
-        var payloadSize = compressedSize > 0 ? compressedSize : decompressedSize;
-        var payloadBuffer = new byte[payloadSize];
-        accessor.ReadArray(EntryHeaderSize, payloadBuffer, 0, payloadSize);
-
-        if (compressedSize > 0)
+        finally
         {
-            var decompressed = new byte[decompressedSize];
-            _compression.Decompress(payloadBuffer, decompressed);
-            return Task.FromResult<ReadOnlyMemory<byte>>(decompressed);
+            _writeLock.Release();
         }
-
-        return Task.FromResult<ReadOnlyMemory<byte>>(payloadBuffer);
     }
 
     public long GetSegmentStartOffset(int segmentIndex) => (long)segmentIndex * _segmentSizeBytes;
 
     public void Flush()
     {
-        lock (_writeLock)
+        _writeLock.Wait();
+        try
         {
             _dataStream?.Flush();
+        }
+        finally
+        {
+            _writeLock.Release();
         }
     }
 
     public void Dispose()
     {
-        lock (_writeLock)
+        _writeLock.Wait();
+        try
         {
             _dataStream?.Dispose();
             _dataStream = null;
         }
+        finally
+        {
+            _writeLock.Release();
+        }
+        _writeLock.Dispose();
     }
 }
 

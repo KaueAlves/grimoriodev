@@ -9,12 +9,16 @@
 
 ## Fase 2 ✅ — Sistema de Workspace
 - [x] Entidades domínio (Workspace, WorkspaceSettings, CardIndexEntry)
-- [x] Interfaces (IWorkspaceRepo, ICardRepo, ICardCache, etc.)
-- [x] Persistência JSON com recent workspaces
-- [x] WorkspaceService (CRUD)
-- [x] Auto Save + Dirty Tracking
-- [x] UI: StartScreenWindow com lista de workspaces
-- [x] DI integrada (Application + Infrastructure)
+- [x] Interfaces (IWorkspaceRepo, ICardRepo, ICardCache, IWalService, IBloomFilter, IMemoryBudgetManager, IDedupService)
+- [x] LSM Storage: DataFileRepository, MemoryMappedIndexRepository, MemoryMappedIndexBloomFilter, WalService (group commit + CRC32 + incremental checkpoint), ContentAddressableStore, Lz4CompressionService, CardCacheLru2Q, PooledBuffer, MemoryBudgetManager, Prefetcher, TokenBucket
+- [x] I/O: ConfigureAwait(false) infra-wide, SemaphoreSlim(max 4), true async I/O, PrefaultPages, SIMD binary search (AVX2+SSE2+scalar)
+- [x] Persistência: JsonWorkspaceRepository + WorkspaceJsonContext (source generator)
+- [x] Use Cases: WorkspaceService (CRUD), LoadCard, RecoverWorkspace, CompactWal, VacuumData, DirtyTrackerService, AutoSaveService
+- [x] UI: StartScreenWindow (lista + criar), MainWindow (info + status bar + menu + WAL recovery)
+- [x] DI integrada (Application + Infrastructure + Presentation)
+- [x] ADR docs (4 decisions in docs/adr/)
+- [x] Testes: 86 testes, 100% passing
+- [x] App executa sem crash (StartScreenWindow abre)
 
 ## Fase 3 — Canvas Infinito
 ## Fase 4 — Sistema de Cards

@@ -40,7 +40,7 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
 
         try
         {
-            var json = await File.ReadAllTextAsync(filePath, cancellationToken);
+            var json = await File.ReadAllTextAsync(filePath, cancellationToken).ConfigureAwait(false);
             var meta = JsonSerializer.Deserialize(json, WorkspaceJsonContext.Default.WorkspaceMeta);
             if (meta is null) return null;
 
@@ -69,7 +69,7 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
             try
             {
                 var id = Guid.Parse(Path.GetFileNameWithoutExtension(file));
-                var ws = await GetByIdAsync(id, cancellationToken);
+                var ws = await GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
                 if (ws is not null)
                     workspaces.Add(ws);
             }
@@ -103,9 +103,9 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
 
         var json = JsonSerializer.Serialize(meta, WorkspaceJsonContext.Default.WorkspaceMeta);
         var filePath = Path.Combine(dir, $"{workspace.Id}.json");
-        await File.WriteAllTextAsync(filePath, json, cancellationToken);
+        await File.WriteAllTextAsync(filePath, json, cancellationToken).ConfigureAwait(false);
 
-        await UpdateRecentListAsync(workspace, cancellationToken);
+        await UpdateRecentListAsync(workspace, cancellationToken).ConfigureAwait(false);
         _logger.LogDebug("Workspace {Id} saved to {Path}", workspace.Id, filePath);
     }
 
@@ -122,7 +122,7 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
         if (Directory.Exists(dataDir))
             Directory.Delete(dataDir, recursive: true);
 
-        await RemoveFromRecentListAsync(id, cancellationToken);
+        await RemoveFromRecentListAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -133,7 +133,7 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
     public async Task<IReadOnlyList<RecentWorkspaceEntry>> GetRecentAsync(int maxCount = 10, CancellationToken cancellationToken = default)
     {
         var recentPath = Path.Combine(_appDataPath, "recent.json");
-        var recent = await LoadRecentAsync(recentPath, cancellationToken);
+        var recent = await LoadRecentAsync(recentPath, cancellationToken).ConfigureAwait(false);
         return recent.Entries.Take(maxCount).ToList();
     }
 
@@ -144,7 +144,7 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
     private async Task UpdateRecentListAsync(Workspace workspace, CancellationToken cancellationToken)
     {
         var recentPath = Path.Combine(_appDataPath, "recent.json");
-        var recent = await LoadRecentAsync(recentPath, cancellationToken);
+        var recent = await LoadRecentAsync(recentPath, cancellationToken).ConfigureAwait(false);
 
         recent.Entries.RemoveAll(e => e.Id == workspace.Id);
         recent.Entries.Insert(0, new RecentWorkspaceEntry
@@ -159,17 +159,17 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
             recent.Entries = recent.Entries.Take(20).ToList();
 
         var json = JsonSerializer.Serialize(recent, JsonOptions);
-        await File.WriteAllTextAsync(recentPath, json, cancellationToken);
+        await File.WriteAllTextAsync(recentPath, json, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task RemoveFromRecentListAsync(Guid id, CancellationToken cancellationToken)
     {
         var recentPath = Path.Combine(_appDataPath, "recent.json");
-        var recent = await LoadRecentAsync(recentPath, cancellationToken);
+        var recent = await LoadRecentAsync(recentPath, cancellationToken).ConfigureAwait(false);
         recent.Entries.RemoveAll(e => e.Id == id);
 
         var json = JsonSerializer.Serialize(recent, JsonOptions);
-        await File.WriteAllTextAsync(recentPath, json, cancellationToken);
+        await File.WriteAllTextAsync(recentPath, json, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<RecentWorkspacesFile> LoadRecentAsync(string path, CancellationToken cancellationToken)
@@ -179,7 +179,7 @@ public sealed class JsonWorkspaceRepository : IWorkspaceRepository
 
         try
         {
-            var json = await File.ReadAllTextAsync(path, cancellationToken);
+            var json = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
             return JsonSerializer.Deserialize<RecentWorkspacesFile>(json, JsonOptions) ?? new RecentWorkspacesFile();
         }
         catch

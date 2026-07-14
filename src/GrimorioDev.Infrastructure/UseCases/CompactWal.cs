@@ -17,7 +17,7 @@ public sealed class CompactWal
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting WAL compaction ({Pending} pending entries)", _wal.PendingEntries);
-        await _wal.CompactAsync(cancellationToken);
+        await _wal.CompactAsync(cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("WAL compaction complete");
     }
 }

@@ -1,5 +1,9 @@
 using System.Buffers;
 using System.IO.MemoryMappedFiles;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using GrimorioDev.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -17,7 +21,7 @@ public sealed class MemoryMappedIndexRepository : IDisposable
     private long _totalDataSize;
     private bool _dirty;
 
-    public const int EntrySize = 24;
+    public const int EntrySize = 28;
     public const int HeaderSize = 40;
     private const uint Magic = 0x4752494D;
     private const int CurrentVersion = 1;
@@ -54,6 +58,8 @@ public sealed class MemoryMappedIndexRepository : IDisposable
         {
             WriteHeader();
         }
+
+        PrefaultPages();
     }
 
     private void CreateNewIndex()
@@ -117,13 +123,13 @@ public sealed class MemoryMappedIndexRepository : IDisposable
         if (_accessor is null || _entryCount == 0)
             return false;
 
+        var lo = 0;
+        var hi = _entryCount - 1;
         var entriesStart = HeaderSize;
-        var low = 0;
-        var high = _entryCount - 1;
 
-        while (low <= high)
+        while (lo <= hi)
         {
-            var mid = low + ((high - low) >> 1);
+            var mid = lo + ((hi - lo) >> 1);
             var entryOffset = entriesStart + (long)mid * EntrySize;
             var midId = ReadGuid(_accessor, entryOffset);
             var cmp = cardId.CompareTo(midId);
@@ -134,10 +140,11 @@ public sealed class MemoryMappedIndexRepository : IDisposable
                 offsetInSegment = _accessor.ReadInt64(entryOffset + 20);
                 return true;
             }
-            else if (cmp < 0)
-                high = mid - 1;
+
+            if (cmp < 0)
+                hi = mid - 1;
             else
-                low = mid + 1;
+                lo = mid + 1;
         }
 
         return false;
@@ -151,7 +158,75 @@ public sealed class MemoryMappedIndexRepository : IDisposable
         if (_accessor is null || _entryCount == 0)
             return false;
 
-        return TryFind(cardId, out segmentIndex, out offsetInSegment);
+        var idBytes = cardId.ToByteArray();
+        var lo = 0;
+        var hi = _entryCount - 1;
+
+        while (lo <= hi)
+        {
+            var mid = lo + (hi - lo) / 2;
+            var entryOffset = HeaderSize + mid * EntrySize;
+            var compare = CompareGuidSimd(idBytes, entryOffset);
+
+            if (compare == 0)
+            {
+                segmentIndex = _accessor.ReadInt32(entryOffset + 16);
+                offsetInSegment = _accessor.ReadInt64(entryOffset + 20);
+                return true;
+            }
+
+            if (compare < 0)
+                hi = mid - 1;
+            else
+                lo = mid + 1;
+        }
+
+        return false;
+    }
+
+    private int CompareGuidSimd(byte[] target, int entryOffset)
+    {
+        if (Avx2.IsSupported)
+        {
+            Span<byte> target32 = stackalloc byte[32];
+            target.CopyTo(target32);
+            var targetVec = Unsafe.As<byte, Vector256<byte>>(ref target32[0]);
+
+            Span<byte> entry32 = stackalloc byte[32];
+            for (var i = 0; i < 16; i++)
+                entry32[i] = _accessor!.ReadByte(entryOffset + i);
+            var entryVec = Unsafe.As<byte, Vector256<byte>>(ref entry32[0]);
+
+            var cmp = Vector256.Equals(targetVec, entryVec);
+            var mask = Avx2.MoveMask(cmp);
+            var mask16 = (ushort)(mask & 0xFFFF);
+            if (mask16 == 0xFFFF) return 0;
+            var firstDiff = BitOperations.TrailingZeroCount(~mask16);
+            return target[firstDiff] - entry32[firstDiff];
+        }
+
+        if (Sse2.IsSupported)
+        {
+            var targetVec = Unsafe.As<byte, Vector128<byte>>(ref target[0]);
+            Span<byte> entry16 = stackalloc byte[16];
+            for (var i = 0; i < 16; i++)
+                entry16[i] = _accessor!.ReadByte(entryOffset + i);
+            var entryVec = Unsafe.As<byte, Vector128<byte>>(ref entry16[0]);
+
+            var cmp = Sse2.CompareEqual(targetVec, entryVec);
+            var mask = (ushort)Sse2.MoveMask(cmp);
+            if (mask == 0xFFFF) return 0;
+            var firstDiff = BitOperations.TrailingZeroCount(~mask);
+            return target[firstDiff] - entry16[firstDiff];
+        }
+
+        for (var i = 0; i < 16; i++)
+        {
+            var b = _accessor!.ReadByte(entryOffset + i);
+            var diff = target[i] - b;
+            if (diff != 0) return diff;
+        }
+        return 0;
     }
 
     public void Upsert(Guid cardId, int segmentIndex, long offsetInSegment)
@@ -177,6 +252,7 @@ public sealed class MemoryMappedIndexRepository : IDisposable
             }
 
             var newSize = HeaderSize + (long)(_entryCount + 1) * EntrySize;
+            _accessor.Flush();
             _accessor.Dispose();
             _mmf?.Dispose();
 
@@ -340,6 +416,31 @@ public sealed class MemoryMappedIndexRepository : IDisposable
                 _accessor.Flush();
                 _dirty = false;
             }
+        }
+    }
+
+    private void PrefaultPages()
+    {
+        try
+        {
+            if (_accessor is null || _mmf is null) return;
+
+            var length = _accessor.Capacity;
+            if (length <= 0) return;
+
+            const int pageSize = 4096;
+            var touched = 0;
+            for (var offset = 0L; offset < length; offset += pageSize)
+            {
+                _ = _accessor.ReadByte(offset);
+                touched++;
+            }
+
+            _logger.LogDebug("Prefaulted {Pages} pages ({Size} KB) of index", touched, length / 1024);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Prefault failed (non-critical)");
         }
     }
 
