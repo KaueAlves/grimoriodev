@@ -41,6 +41,7 @@ public partial class App : System.Windows.Application
             Current.MainWindow?.Close();
             Current.MainWindow = mainWindow;
             mainWindow.Show();
+            mainWindow.NavigateToCanvas();
         });
     }
 }
@@ -51,8 +52,10 @@ public static class DependencyInjection
     {
         services.AddSingleton<MainViewModel>();
         services.AddTransient<MainWindow>();
-        services.AddTransient<WorkspaceViewModel>();
+        services.AddSingleton<WorkspaceViewModel>();
         services.AddTransient<StartScreenWindow>();
+        services.AddTransient<CanvasViewModel>();
+        services.AddTransient<CanvasPage>();
         return services;
     }
 }

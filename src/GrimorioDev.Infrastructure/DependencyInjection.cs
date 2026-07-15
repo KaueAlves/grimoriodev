@@ -1,3 +1,5 @@
+using GrimorioDev.Application.Interfaces;
+using GrimorioDev.Application.UseCases;
 using GrimorioDev.Domain.Interfaces;
 using GrimorioDev.Infrastructure.Repositories;
 using GrimorioDev.Infrastructure.Services;
@@ -27,6 +29,8 @@ public static class DependencyInjection
         services.AddSingleton<Lz4CompressionService>();
         services.AddSingleton<MemoryBudgetManager>();
         services.AddSingleton<WorkspaceSessionService>();
+        services.AddSingleton<IWorkspaceSessionService>(sp => sp.GetRequiredService<WorkspaceSessionService>());
+        services.AddSingleton<Application.UseCases.ICardRepository, CardRepository>();
 
         return services;
     }

@@ -5,10 +5,18 @@ namespace GrimorioDev.Presentation.Views;
 
 public partial class MainWindow : Window
 {
-    public MainWindow(MainViewModel viewModel)
+    private readonly CanvasPage _canvasPage;
+
+    public MainWindow(MainViewModel viewModel, CanvasPage canvasPage)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _canvasPage = canvasPage;
+    }
+
+    public void NavigateToCanvas()
+    {
+        ContentFrame.Navigate(_canvasPage);
     }
 
     private void OnExitClick(object sender, RoutedEventArgs e)

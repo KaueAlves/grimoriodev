@@ -1,10 +1,11 @@
 using GrimorioDev.Application.DTOs;
+using GrimorioDev.Application.Interfaces;
 using GrimorioDev.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace GrimorioDev.Infrastructure.Services;
 
-public sealed class WorkspaceSessionService : IDisposable
+public sealed class WorkspaceSessionService : IWorkspaceSessionService, IDisposable
 {
     private readonly ILogger<WorkspaceSessionService> _logger;
     private readonly ILoggerFactory _loggerFactory;

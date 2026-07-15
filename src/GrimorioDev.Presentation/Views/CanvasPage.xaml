@@ -1,0 +1,12 @@
+<Page x:Class="GrimorioDev.Presentation.Views.CanvasPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:controls="clr-namespace:GrimorioDev.Presentation.Controls"
+      Title="Canvas"
+      Background="{StaticResource BackgroundPrimary}">
+
+    <Grid>
+        <controls:InfiniteCanvas x:Name="CanvasControl"
+                                 Cards="{Binding Cards}"/>
+    </Grid>
+</Page>

@@ -20,7 +20,18 @@
 - [x] Testes: 86 testes, 100% passing
 - [x] App executa sem crash (StartScreenWindow abre)
 
-## Fase 3 — Canvas Infinito
+## Fase 3 ✅ — Canvas Infinito
+- [x] InfiniteCanvas custom control (DrawingVisual: zoom/pan/grid/LOD)
+- [x] Renderização de cards com viewport culling + DrawingVisualPool
+- [x] Hit test + drag (seleção, ghost, persistência ao soltar)
+- [x] Duplo-clique cria card em posição do clique
+- [x] Zoom adaptativo (5 níveis LOD: Mini→Compact→Normal→Detailed→MaxDetail)
+- [x] Card entity (CardPosition, Title, Content, Width, Height, IsPinned)
+- [x] Use Cases: CreateCard, LoadCanvasCards, MoveCard
+- [x] CardRepository LSM (DataFile + Index + WAL + Bloom + Cache + Dedup)
+- [x] CanvasViewModel + CanvasPage + navegação MainWindow
+- [x] 32 testes novos (117 total), 0 warnings, 0 errors, app roda
+
 ## Fase 4 — Sistema de Cards
 ## Fase 5 — Sistema de Conexões
 ## Fase 6 — Sistema de Componentes

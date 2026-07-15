@@ -28,29 +28,10 @@
             </MenuItem>
         </Menu>
 
-        <!-- Canvas placeholder -->
-        <Border Grid.Row="1" Margin="0">
-            <Grid>
-                <TextBlock Text="{Binding WorkspaceName}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontSize="28" FontWeight="Bold"
-                           Foreground="{StaticResource ForegroundAccent}"/>
-
-                <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center"
-                            Margin="0,0,0,40" Visibility="{Binding HasWorkspace, Converter={StaticResource BoolToVisibilityConverter}}">
-                    <TextBlock Text="{Binding WorkspaceDescription}"
-                               Foreground="{StaticResource ForegroundSecondary}"
-                               FontSize="14" HorizontalAlignment="Center"/>
-                    <TextBlock Margin="0,8,0,0" FontSize="12"
-                               Foreground="{StaticResource ForegroundSecondary}"
-                               HorizontalAlignment="Center">
-                        <Run Text="{Binding CardCount}"/><Run Text=" cards · "/>
-                        <Run Text="{Binding SizeInfo}"/>
-                    </TextBlock>
-                </StackPanel>
-            </Grid>
-        </Border>
+        <!-- Canvas frame -->
+        <Frame Grid.Row="1" x:Name="ContentFrame"
+               NavigationUIVisibility="Hidden"
+               Focusable="False"/>
 
         <!-- Status Bar -->
         <Border Grid.Row="2" Padding="12,4" Background="{StaticResource BackgroundSecondary}">

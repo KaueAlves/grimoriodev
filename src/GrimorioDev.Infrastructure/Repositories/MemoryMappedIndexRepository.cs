@@ -444,6 +444,26 @@ public sealed class MemoryMappedIndexRepository : IDisposable
         }
     }
 
+    public IEnumerable<(Guid CardId, int SegmentIndex, long Offset)> EnumerateAllEntries()
+    {
+        lock (_lock)
+        {
+            if (_accessor is null || _entryCount == 0)
+                yield break;
+
+            var entriesStart = HeaderSize;
+            for (var i = 0; i < _entryCount; i++)
+            {
+                var offset = entriesStart + (long)i * EntrySize;
+                yield return (
+                    ReadGuid(_accessor, offset),
+                    _accessor.ReadInt32(offset + 16),
+                    _accessor.ReadInt64(offset + 20)
+                );
+            }
+        }
+    }
+
     public void Dispose()
     {
         lock (_lock)

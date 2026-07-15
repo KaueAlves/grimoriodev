@@ -87,3 +87,48 @@
 - [x] ADR-003: group commit vs per-entry WAL
 - [x] ADR-004: adaptive LZ4 vs compressão fixa
 - [x] Localização padrão: %USERPROFILE%/GrimorioDev
+
+---
+
+## Fase 3 — Canvas Infinito ✅
+### Domain
+- [x] Card entity (Title, Content, Position, Width, Height, IsPinned)
+- [x] CardPosition readonly record struct (X, Y, ZIndex) + Offset()
+- [x] CardIndexEntry struct (32 bytes, já existente)
+
+### Application
+- [x] IWorkspaceSessionService interface (CurrentWorkspace, IsActive)
+- [x] ICardRepository interface (workspace-scoped CRUD: GetAllAsync, GetByIdAsync, SaveAsync, DeleteAsync, SaveBatchAsync)
+- [x] CardDto + CreateCardRequest + MoveCardRequest DTOs
+- [x] CreateCard use case (valida título, posição, tamanho, persistência LSM)
+- [x] LoadCanvasCards use case (carrega todos do workspace ativo)
+- [x] MoveCard use case (move + salva via LSM)
+
+### Infrastructure
+- [x] CardRepository LSM (DataFileRepository + MemoryMappedIndexRepository + WalService + Bloom + Cache + Dedup)
+- [x] MemoryMappedIndexRepository.EnumerateAllEntries() — varredura completa do índice
+- [x] DI: CardRepository registrado como singleton com acesso ao WorkspaceSessionService
+
+### Presentation — InfiniteCanvas Control
+- [x] Custom Canvas com DrawingVisual (zoom/pan/grid)
+- [x] Zoom: Ctrl+ScrollWheel, 10%–1000%, centrado no mouse
+- [x] Pan: botão direito arrastar
+- [x] Grid adaptativo (linhas, espaçamento escala com zoom, mínimo 5px)
+- [x] Viewport culling: só desenha cards na viewport
+- [x] DrawingVisualPool (reuso de objetos DrawingVisual)
+- [x] Z-Order: cards ordenados por ZIndex
+- [x] Hit test: scan linear, conversão screen→canvas coordinates
+- [x] Drag: seleção via clique, ghost na posição original, nova posição ao soltar
+- [x] Duplo-clique em espaço vazio: cria card na posição
+- [x] LOD 5 níveis: Mini (<30%) → Compact (30-50%) → Normal (50-150%) → Detailed (150-500%) → MaxDetail (>500%)
+- [x] CardRenderData sealed record (DTO de renderização)
+- [x] CardMovedEventArgs event args
+- [x] CanvasViewModel (ObservableCollection<CardRenderData>, load/move/create commands)
+- [x] CanvasPage + navegação via MainWindow Frame
+
+### Testes — 32 novos, 117 total
+- [x] CardTests (13) — Create, UpdateTitle, UpdateContent, MoveTo, Resize, TogglePin, Restore, validações
+- [x] CardPositionTests (5) — Offset, Equality, Deconstruct, Default
+- [x] LoadCanvasCardsTests (4) — load, empty workspace, empty cards, full mapping
+- [x] MoveCardTests (4) — move, no workspace, not found, timestamp update
+- [x] CreateCardTests (6) — create, custom size, default content, no workspace, empty title validation
